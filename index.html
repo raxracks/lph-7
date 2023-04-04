@@ -7,6 +7,8 @@
     <title>balls</title>
 
     <script>
+      let context = "";
+
       function parseData(data) {
         if (data === null) return undefined;
 
@@ -104,9 +106,15 @@
 
         addMessage(content, true);
 
-        let response = await (await fetch(`/message?q=${content}`)).json();
+        let response = await (await fetch(`/message?q=${context}${context ? ", " : ""}${content}`)).json();
 
         addMessage(response, false);
+
+        context = response.simplifiedQuery;
+
+        let split = context.split(", ");
+        if(split.length > 2) split.shift();
+        context = split.join(", ");
       }
     </script>
 
