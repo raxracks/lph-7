@@ -1,0 +1,211 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta http-equiv="X-UA-Compatible" content="IE=edge" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>balls</title>
+
+    <script>
+      function parseData(data) {
+        if (data === null) return undefined;
+
+        if (typeof data === "object")
+          return Object.keys(data)
+            .map((d) => parseData(data[d]))
+            .join("<br />");
+        return data;
+      }
+
+      function addMessage(content, fromSelf) {
+        let div = document.createElement("div");
+        let span = document.createElement("span");
+        span.classList.add("msg-span");
+
+        if (content?.knowledgePanel?.type) {
+          let container = document.createElement("span");
+          container.classList.add("knowledge");
+
+          let type = document.createElement("p");
+          type.innerText = content.knowledgePanel.type;
+          type.classList.add("type");
+          container.appendChild(type);
+
+          if (content.knowledgePanel.url) {
+            let a = document.createElement("a");
+            a.href = content.knowledgePanel.url;
+            a.target = "_blank";
+
+            let title = document.createElement("h3");
+            title.innerText = content.knowledgePanel.title;
+            a.appendChild(title);
+
+            container.appendChild(a);
+          } else {
+            let title = document.createElement("h3");
+            title.innerText = content.knowledgePanel.title;
+            container.appendChild(title);
+          }
+
+          let description = document.createElement("p");
+          description.innerText = content.knowledgePanel.description;
+          container.appendChild(description);
+
+          div.appendChild(container);
+        }
+
+        if (!fromSelf) {
+          content.result.forEach((sentenceUrlGroup, i) => {
+            let s = document.createElement("span");
+            s.innerText = sentenceUrlGroup.sentence;
+            span.appendChild(s);
+
+            let sup = document.createElement("sup");
+            let supLeft = document.createElement("span");
+            supLeft.innerText = "[";
+            let supLink = document.createElement("a");
+            supLink.innerText = i + 1;
+            supLink.href = sentenceUrlGroup.url;
+            supLink.target = "_blank";
+            let supRight = document.createElement("span");
+            supRight.innerText = "]";
+
+            sup.appendChild(supLeft);
+            sup.appendChild(supLink);
+            sup.appendChild(supRight);
+            span.appendChild(sup);
+
+            let end = document.createElement("span");
+            end.innerText = ". ";
+            span.appendChild(end);
+          });
+
+          if(!content.result || content.result.length === 0) {
+            span.innerText = "Sorry, no results.";
+          }
+
+          div.appendChild(span); 
+        } else {
+          span.innerText = content;
+          div.appendChild(span);
+          div.classList.add("left");
+        }
+
+        document.querySelector("#msgs").appendChild(div);
+
+        document.querySelector("#msgs").scrollTo(0, 99999);
+      }
+
+      async function send(e) {
+        e.preventDefault();
+
+        let content = document.querySelector("#textbox").value;
+        document.querySelector("#textbox").value = "";
+
+        addMessage(content, true);
+
+        let response = await (await fetch(`/message?q=${content}`)).json();
+
+        addMessage(response, false);
+      }
+    </script>
+
+    <style>
+      @import url("https://fonts.googleapis.com/css2?family=Lexend:wght@300&display=swap");
+
+      html,
+      body {
+        padding: 0;
+        margin: 0;
+        overflow: hidden;
+        font-family: "Lexend", sans-serif;
+      }
+
+      body {
+        height: 100vh;
+        background-color: #fafafa;
+      }
+
+      .container {
+        display: flex;
+        height: 100%;
+        flex-direction: column;
+        justify-content: flex-end;
+      }
+
+      .messages {
+        padding: 10px;
+        display: flex;
+        flex-direction: column;
+        align-items: center;
+        align-content: center;
+        overflow-y: auto;
+        max-height: -webkit-fill-available;
+      }
+
+      .messages div {
+        margin: 10px;
+        max-width: 70%;
+        align-self: end;
+        display: flex;
+        flex-direction: column;
+        align-items: flex-end;
+      }
+
+      .messages div .msg-span {
+        padding: 20px;
+        background: white;
+        border-radius: 10px;
+        border: 1px solid black;
+      }
+
+      .left {
+        align-self: start !important;
+      }
+
+      #textbox {
+        width: -webkit-fill-available;
+        padding: 20px;
+        outline: 0;
+        border: 1px solid black;
+        font-family: "Lexend", sans-serif;
+      }
+
+      h3,
+      h4 {
+        margin: 0;
+        padding: 0;
+      }
+
+      .knowledge {
+        max-width: 80% !important;
+        background: white;
+        border-radius: 10px;
+        border: 1px solid black;
+        display: flex !important;
+        flex-direction: column !important;
+        align-items: flex-start !important;
+        padding: 10px;
+        margin-bottom: 5px;
+      }
+
+      .knowledge .type {
+        color: #727272;
+      }
+
+      p {
+        margin: 0;
+        padding: 0;
+      }
+    </style>
+  </head>
+
+  <body>
+    <div class="container">
+      <div id="msgs" class="messages"></div>
+      <form onsubmit="send(event)">
+        <input id="textbox" placeholder="put da message in this thing" />
+      </form>
+    </div>
+  </body>
+</html>
