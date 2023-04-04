@@ -63,7 +63,17 @@ function endsWithStopword(sentence) {
 }
 
 function removeDuplicates(array) {
-  return [...new Set(array)];
+  let newarr = [];
+  let found = [];
+
+  array.forEach(item => {
+    if(!found.includes(item.sentence)) {
+      newarr.push(item);
+      found.push(item.sentence);
+    }
+  });
+
+  return newarr;
 }
 
 function removeStopwordEndings(array) {
