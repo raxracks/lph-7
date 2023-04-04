@@ -28,35 +28,20 @@ function calculateScore(word1, word2) {
   return score;
 }
 
-function removeBad(sentence) {
+function removeStopwords(sentence) {
   return sentence
     .toLowerCase()
     .split(" ")
     .filter(
       (word) =>
-        ![
-          "what",
-          "how",
-          "where",
-          "why",
-          "who",
-          "when",
-          "it",
-          "is",
-          "of",
-          "to",
-          "be",
-          "the",
-          "can",
-          "me",
-        ].includes(word)
+        !stopwords.includes(word)
     )
     .join(" ");
 }
 
 function endsWithStopword(sentence) {
   for (let i = 0; i < stopwords.length; i++) {
-    if (sentence.sentence.endsWith(stopwords[i])) {
+    if (sentence.sentence.endsWith(` ${stopwords[i]}`)) {
       return true;
     }
   }
@@ -85,7 +70,6 @@ function cleanDescription(description) {
     .replace(/\d+\/\d+\/\d+/g, "")
     .replace(/\.\.+/g, "")
     .replace(/\.\.+/g, "")
-    .replace(/\d+\s+\w+\s+\w+/g, "")
     .replace(/(,|,\s+)$/g, "")
     .replaceAll("—", "");
 }
@@ -100,7 +84,20 @@ app.get("/message", async (req, res) => {
   const sentences = [];
   const query = req.query.q;
 
-  const response = await google.search(query, options);
+  let response = await google.search(query, options);
+
+  response.results.forEach((result) => {
+    let sens = cleanDescription(result.description)
+      .split(/[^a-z '\-0-9]/gi)
+      .map((sentence) => sentence.trim())
+      .filter((sentence) => sentence.length !== 0);
+
+    sens.forEach((sen) => {
+      sentences.push({ sentence: sen, url: result.url });
+    });
+  });
+
+  response = await google.search("how respond " + query, options);
 
   response.results.forEach((result) => {
     let sens = cleanDescription(result.description)
@@ -121,9 +118,9 @@ app.get("/message", async (req, res) => {
       let sentence2 = sentenceGroup2.sentence;
       if (sentence === sentence2) return;
 
-      let words1 = removeBad(sentence).split(" ");
-      let words2 = removeBad(sentence2).split(" ");
-      let words3 = removeBad(query).split(" ");
+      let words1 = removeStopwords(sentence).split(" ");
+      let words2 = removeStopwords(sentence2).split(" ");
+      let words3 = removeStopwords(query).split(" ");
       let score = 0;
 
       words1.forEach((word) => {
@@ -165,7 +162,7 @@ app.get("/message", async (req, res) => {
     removeNoncapitalStarters(removeStopwordEndings(removeDuplicates(results)))
   );
 
-  res.send({ result, knowledgePanel });
+  res.send({ result, knowledgePanel, simplifiedQuery: removeStopwords(query), simplifiedResponse: removeStopwords(result[0]?.sentence ?? "") });
 });
 
 app.listen(3232, () => {
